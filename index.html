@@ -16,6 +16,18 @@
   }
   canvas {
     display: block;
+    /* Fit-to-screen on mobile while preserving aspect ratio (375×667) */
+    width: min(100vw, calc(100svh * 375 / 667));
+    height: min(100svh, calc(100vw * 667 / 375));
+    /* Prevent browser gestures interfering with controls */
+    touch-action: none;
+  }
+  /* Desktop: cap canvas size, stay centered */
+  @media (pointer: fine) and (min-width: 768px) {
+    canvas {
+      max-width: 375px;
+      max-height: 667px;
+    }
   }
 </style>
 </head>
