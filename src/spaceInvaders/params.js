@@ -24,7 +24,56 @@ export const params = {
     // Background clear color (#222034)
     background: /** @type {[number, number, number]} */ ([34, 32, 52])
   },
+  music: {
+    name: "bgm-track-1",
+    url: "musics/track-1.mp3",
+    volume: 0.35
+  },
+  // Sound effects (loaded from Vite public/ via k.loadRoot("./")).
+  sounds: {
+    shipFire: {
+      name: "sfx-ship-fire",
+      url: "sounds/ship-fire.wav",
+      volume: 0.6
+    },
+    shipDamage: {
+      name: "sfx-ship-damage",
+      url: "sounds/ship-damage.wav",
+      volume: 0.7
+    },
+    shipDeath: {
+      name: "sfx-ship-death",
+      url: "sounds/ship-death.wav",
+      volume: 0.8
+    },
+    enemyFire: {
+      name: "sfx-enemy-fire",
+      url: "sounds/enemy-fire.wav",
+      volume: 0.55
+    },
+    enemyDeath: {
+      name: "sfx-enemy-death",
+      url: "sounds/enemy-death.wav",
+      volume: 0.65
+    }
+  },
   background: {
+    // Parallax tuning (screen-space). Stars wrap; moon/earth just offset for depth.
+    parallax: {
+      staticBg: 0,
+      moon: 0.25,
+      // Vertical parallax factor for the moon (relative to ship spawn Y).
+      moonY: 0.18,
+      earth: 0.12,
+      wrapMargin: 80,
+      stars: {
+        // Distant: should move very subtly compared to moon/earth.
+        static: 0.02,
+        animated: 0.025,
+        exploding: 0.03,
+        shooting: 0.03
+      }
+    },
     staticBg: {
       name: "static-bg",
       url: "static-bg.png",
@@ -90,20 +139,17 @@ export const params = {
       explodingStarIntervalRange: /** @type {[number, number]} */ ([0.9, 2.0])
     }
   },
-  touchControls: {
-    buttonSize: 64,
-    buttonPadding: 20,
-    shootButtonSize: 64,
-    sprites: {
-      left: { name: "ui-left", url: "Button-left.png" },
-      right: { name: "ui-right", url: "Button-right.png" },
-      fire: { name: "ui-fire", url: "fire-button.png" }
-    }
-  },
   player: {
     width: 40,
     height: 40,
     speed: 300,
+    // Pointer-follow movement tuning (bottom zone only).
+    movement: {
+      zoneHeightFrac: 0.1,
+      bottomPadPx: 6
+    },
+    // Auto-fire tuning.
+    autoFireShotsPerSecond: 2,
     bulletSpeed: 500,
     bulletSprite: {
       name: "playerBullet",
@@ -133,6 +179,28 @@ export const params = {
         frameWidth: 40,
         frameHeight: 40,
         animSpeed: 8
+      },
+      // Plays when the ship takes a hit (non-lethal).
+      damage: {
+        name: "playerDamage",
+        url: "ship-damage.png",
+        sliceX: 4,
+        sliceY: 1,
+        frames: 4,
+        frameWidth: 40,
+        frameHeight: 40,
+        animSpeed: 12
+      },
+      // Plays when the ship is destroyed (lethal).
+      death: {
+        name: "playerDeath",
+        url: "ship-death.png",
+        sliceX: 4,
+        sliceY: 1,
+        frames: 4,
+        frameWidth: 40,
+        frameHeight: 40,
+        animSpeed: 12
       }
     }
   },
