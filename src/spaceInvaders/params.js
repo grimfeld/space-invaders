@@ -18,6 +18,10 @@ export const starColors = /** @type {const} */ ([
 ]);
 
 export const params = {
+  // Debug-only toggles (used only when Vite dev mode is on).
+  debug: {
+    phaseSwitch: true
+  },
   canvas: {
     width: 375,
     height: 667,
@@ -58,6 +62,7 @@ export const params = {
     }
   },
   background: {
+    showEarth: false,
     // Parallax tuning (screen-space). Stars wrap; moon/earth just offset for depth.
     parallax: {
       staticBg: 0,
@@ -156,7 +161,7 @@ export const params = {
       url: "player-bullet.png",
       scale: 1
     },
-    lives: 3,
+    lives: 5,
     spawnOffset: 40,
     hitRecoveryDelay: 0.5,
     spriteSheets: {
@@ -209,6 +214,7 @@ export const params = {
     cols: 8,
     spacing: 40,
     startY: 60,
+    introSlideSpeed: 260,
     size: 24,
     dropDistance: 15,
     horizontalPadding: 20,
@@ -241,6 +247,24 @@ export const params = {
   enemyFire: {
     interval: 1.5,
     bulletSpeed: 250
+  },
+  boss: {
+    hp: 30,
+    // Boss uses the normal enemy sprite sheet, just scaled up.
+    scaleMultiplier: 4,
+    // Intro cutscene
+    introSlideSpeed: 220,
+    // Sweep movement
+    speed: 85,
+    yFrac: 0.22,
+    sweepPadding: 22,
+    bobAmp: 6,
+    bobSpeed: 2.1,
+    // Shooting pattern (spread/fan)
+    shootInterval: 1.5,
+    bulletSpeed: 260,
+    spreadCount: 3,
+    spreadAngleDeg: 55
   }
 };
 
