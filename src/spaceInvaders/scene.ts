@@ -1,194 +1,15 @@
-import { getStarColorFiles, getStarSpriteName } from "./params.js";
+import { setupBackground } from "./background";
+import type { KaplayCtx, Params, Phase } from "./types";
 
-export async function loadSpaceInvadersAssets(k, p) {
-  const showLoadError = (msg) => {
-    k.add([
-      k.text(msg, { size: 24 }),
-      k.pos(k.width() / 2, k.height() / 2),
-      k.anchor("center"),
-      k.color(255, 0, 0),
-      k.fixed(),
-      "ui"
-    ]);
-  };
-
-  try {
-    const starColorFiles = getStarColorFiles(p);
-
-    await Promise.all([
-      k.loadSprite(p.background.staticBg.name, p.background.staticBg.url),
-      ...(p.background.showEarth
-        ? [k.loadSprite(p.background.earth.name, p.background.earth.url)]
-        : []),
-      k.loadSprite(p.background.moon.name, p.background.moon.url),
-      k.loadSound(p.music.name, p.music.url),
-      k.loadSound(p.sounds.shipFire.name, p.sounds.shipFire.url),
-      k.loadSound(p.sounds.shipDamage.name, p.sounds.shipDamage.url),
-      k.loadSound(p.sounds.shipDeath.name, p.sounds.shipDeath.url),
-      k.loadSound(p.sounds.enemyFire.name, p.sounds.enemyFire.url),
-      k.loadSound(p.sounds.enemyDeath.name, p.sounds.enemyDeath.url),
-
-      ...starColorFiles.map((file) => {
-        const isTwinkling = file.startsWith(
-          `${p.background.stars.twinkling.filePrefix}-`
-        );
-        const isPulsing = file.startsWith(
-          `${p.background.stars.pulsing.filePrefix}-`
-        );
-
-        const kind = isTwinkling
-          ? p.background.stars.twinkling
-          : isPulsing
-            ? p.background.stars.pulsing
-            : p.background.stars.exploding;
-
-        const spriteName = file.replace(/\.png$/, "");
-
-        return k.loadSprite(spriteName, file, {
-          sliceX: kind.frames,
-          sliceY: 1,
-          anims: {
-            [kind.animName]: {
-              from: 0,
-              to: kind.frames - 1,
-              speed: kind.speed,
-              loop: true
-            }
-          }
-        });
-      }),
-
-      k.loadSprite(
-        p.background.stars.shooting.name,
-        p.background.stars.shooting.url,
-        {
-        sliceX: p.background.stars.shooting.frames,
-        sliceY: 1,
-        anims: {
-          [p.background.stars.shooting.animName]: {
-            from: 0,
-            to: p.background.stars.shooting.frames - 1,
-            speed: p.background.stars.shooting.speed,
-              loop: true
-            }
-          }
-        }
-      ),
-
-      k.loadSprite(
-        p.player.spriteSheets.idle.name,
-        p.player.spriteSheets.idle.url,
-        {
-        sliceX: p.player.spriteSheets.idle.sliceX,
-        sliceY: p.player.spriteSheets.idle.sliceY,
-        anims: {
-          idle: {
-            from: 0,
-            to: p.player.spriteSheets.idle.frames - 1,
-            speed: p.player.spriteSheets.idle.animSpeed,
-              loop: true
-            }
-          }
-        }
-      ),
-
-      k.loadSprite(
-        p.player.spriteSheets.moving.name,
-        p.player.spriteSheets.moving.url,
-        {
-        sliceX: p.player.spriteSheets.moving.sliceX,
-        sliceY: p.player.spriteSheets.moving.sliceY,
-        anims: {
-          moving: {
-            from: 0,
-            to: p.player.spriteSheets.moving.frames - 1,
-            speed: p.player.spriteSheets.moving.animSpeed,
-              loop: true
-            }
-          }
-        }
-      ),
-
-      k.loadSprite(
-        p.player.spriteSheets.damage.name,
-        p.player.spriteSheets.damage.url,
-        {
-          sliceX: p.player.spriteSheets.damage.sliceX,
-          sliceY: p.player.spriteSheets.damage.sliceY,
-          anims: {
-            damage: {
-              from: 0,
-              to: p.player.spriteSheets.damage.frames - 1,
-              speed: p.player.spriteSheets.damage.animSpeed,
-              loop: false
-            }
-          }
-        }
-      ),
-
-      k.loadSprite(
-        p.player.spriteSheets.death.name,
-        p.player.spriteSheets.death.url,
-        {
-          sliceX: p.player.spriteSheets.death.sliceX,
-          sliceY: p.player.spriteSheets.death.sliceY,
-          anims: {
-            death: {
-              from: 0,
-              to: p.player.spriteSheets.death.frames - 1,
-              speed: p.player.spriteSheets.death.animSpeed,
-              loop: false
-            }
-          }
-        }
-      ),
-
-      k.loadSprite(p.player.bulletSprite.name, p.player.bulletSprite.url),
-
-      k.loadSprite(p.enemy.spriteSheet.name, p.enemy.spriteSheet.url, {
-        sliceX: p.enemy.spriteSheet.sliceX,
-        sliceY: p.enemy.spriteSheet.sliceY,
-        anims: {
-          [p.enemy.spriteSheet.defaultAnim]: {
-            from: 0,
-            to: p.enemy.spriteSheet.frames - 1,
-            speed: p.enemy.spriteSheet.animSpeed,
-            loop: true
-          }
-        }
-      }),
-
-      k.loadSprite(
-        p.enemy.deathSpriteSheet.name,
-        p.enemy.deathSpriteSheet.url,
-        {
-        sliceX: p.enemy.deathSpriteSheet.sliceX,
-        sliceY: p.enemy.deathSpriteSheet.sliceY,
-        anims: {
-          [p.enemy.deathSpriteSheet.animName]: {
-            from: 0,
-            to: p.enemy.deathSpriteSheet.frames - 1,
-            speed: p.enemy.deathSpriteSheet.animSpeed,
-              loop: false
-            }
-          }
-        }
-      )
-    ]);
-  } catch (err) {
-    console.error("Failed to load assets", err);
-    showLoadError("Failed to load assets. Please refresh.");
-    throw err;
-  }
-}
-
-export function registerSpaceInvadersScene(k, p) {
+export function registerSpaceInvadersScene(k: KaplayCtx, p: Params): void {
   k.scene("space-invaders", () => {
+    // Internal resolution is fixed by `kaplay({ width, height })`, so cache once.
+    const W = k.width();
+    const H = k.height();
     let enemyDirection = 1;
     let pendingDrop = false;
     let gameOver = false;
-    /** @type {"intro" | "phase1Intro" | "phase1" | "bossIntro" | "boss" | "win" | "gameOver"} */
-    let phase = "intro";
+    let phase: Phase = "intro";
     let lives = p.player.lives;
     let spriteLocked = false;
     let gameOverUiShown = false;
@@ -230,359 +51,11 @@ export function registerSpaceInvadersScene(k, p) {
     };
 
     // ------------------------------
-    // Parallax helpers (screen-space, works with fixed() background)
-    // ------------------------------
-    const parallaxCfg = p.background?.parallax ?? {};
-    const wrapMargin = parallaxCfg.wrapMargin ?? 80;
-    const tagParallax = (obj, opts = {}) => {
-      const {
-        parallax = 0,
-        parallaxY = null,
-        drift = null,
-        wrap = null
-      } = opts;
-      obj.use("bgParallax");
-      obj.basePos = obj.pos.clone();
-      obj.parallax = parallax;
-      if (parallaxY !== null && parallaxY !== undefined)
-        obj.parallaxY = parallaxY;
-      if (drift) obj.drift = drift;
-      if (wrap) obj.wrap = wrap;
-      return obj;
-    };
-
-    // ------------------------------
     // Background layer
     // ------------------------------
-    const bgScale = Math.max(
-      k.width() / p.background.staticBg.width,
-      k.height() / p.background.staticBg.height
-    );
-
-    const earthScale = p.background.showEarth
-      ? k.width() / p.background.earth.width
-      : 1;
-    const earthHeightScaled = p.background.showEarth
-      ? p.background.earth.height * earthScale
-      : 0;
-
-    // Static background
-    const staticBg = k.add([
-      k.sprite(p.background.staticBg.name),
-      k.pos(k.width() / 2, k.height() / 2),
-      k.anchor("center"),
-      k.scale(bgScale),
-      k.fixed(),
-      k.z(-1000),
-      "bg"
-    ]);
-    tagParallax(staticBg, {
-      parallax: parallaxCfg.staticBg ?? 0,
-      parallaxY: 0
+    const { earthHeightScaled, wrapMargin } = setupBackground(k, p, {
+      isGameOver: () => gameOver
     });
-
-    // Star placement grid (64x64) to avoid clustering
-    const starMaxY = Math.max(0, k.height() - earthHeightScaled);
-    const grid = {
-      cell: p.background.stars.gridCellSizePx,
-      pad: 8
-    };
-
-    const buildGridPositions = () => {
-      const out = [];
-      const cell = grid.cell;
-
-      const cols = Math.max(1, Math.floor((k.width() - 1) / cell) + 1);
-      const rows = Math.max(1, Math.floor((starMaxY - 1) / cell) + 1);
-
-      for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-          const x = col * cell + cell / 2;
-          const y = row * cell + cell / 2;
-
-          // Skip positions that would land below the star zone.
-          if (y > starMaxY - grid.pad) continue;
-
-          out.push({
-            x: k.clamp(x, grid.pad, k.width() - grid.pad),
-            y: k.clamp(y, grid.pad, starMaxY - grid.pad)
-          });
-        }
-      }
-      return out;
-    };
-
-    const shuffleInPlace = (arr) => {
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(k.rand(0, i + 1));
-        const tmp = arr[i];
-        arr[i] = arr[j];
-        arr[j] = tmp;
-      }
-      return arr;
-    };
-
-    const allGridPositions = buildGridPositions();
-    const gridPool = shuffleInPlace([...allGridPositions]);
-
-    const jitterGridPos = (pos) => {
-      const half = grid.cell / 2;
-      const maxJitter = Math.max(0, half - grid.pad);
-      const jx = k.rand(-maxJitter, maxJitter);
-      const jy = k.rand(-maxJitter, maxJitter);
-      return {
-        x: k.clamp(pos.x + jx, grid.pad, k.width() - grid.pad),
-        y: k.clamp(pos.y + jy, grid.pad, starMaxY - grid.pad)
-      };
-    };
-
-    const takeGridPos = () => {
-      const pos = gridPool.pop();
-      if (pos) return jitterGridPos(pos);
-      // Fallback (should be rare unless counts exceed grid cells)
-      return {
-        x: k.rand(grid.pad, k.width() - grid.pad),
-        y: k.rand(grid.pad, Math.max(grid.pad, starMaxY - grid.pad))
-      };
-    };
-
-    const pickGridPos = () => {
-      if (allGridPositions.length === 0) return takeGridPos();
-      return jitterGridPos(
-        allGridPositions[Math.floor(k.rand(0, allGridPositions.length))]
-      );
-    };
-
-    // Random static stars (cheap fill) - placed on grid to avoid clustering
-    const staticColors = {
-      blue: [90, 175, 255],
-      green: [130, 255, 190],
-      purple: [205, 140, 255],
-      yellow: [255, 235, 150]
-    };
-
-    // Reserve grid cells for animated stars so static stars don't consume them all.
-    const reservedForAnimated =
-      p.background.stars.twinklingStarCount +
-      p.background.stars.pulsingStarCount;
-    const availableForStatic = Math.max(
-      0,
-      gridPool.length - reservedForAnimated
-    );
-    const staticCount = Math.min(
-      p.background.stars.staticStarCount,
-      availableForStatic
-    );
-
-    for (let i = 0; i < staticCount; i++) {
-      const color =
-        p.background.stars.colors[
-          Math.floor(k.rand(0, p.background.stars.colors.length))
-        ];
-      const [r, g, b] = staticColors[color];
-      const size = k.rand(
-        p.background.stars.staticStarSizeRange[0],
-        p.background.stars.staticStarSizeRange[1]
-      );
-      const pos = takeGridPos();
-
-      const s = k.add([
-        k.rect(size, size),
-        k.pos(pos.x, pos.y),
-        k.anchor("center"),
-        k.color(r, g, b),
-        k.opacity(k.rand(0.5, 0.95)),
-        k.fixed(),
-        k.z(-950),
-        "bg",
-        "bgStarStatic"
-      ]);
-      // Parallax + wrap for stars
-      tagParallax(s, {
-        parallax: parallaxCfg.stars?.static ?? 0.06,
-        wrap: { margin: wrapMargin, pad: grid.pad, maxY: starMaxY }
-      });
-      s.use("bgParallaxStar");
-    }
-
-    const spawnAnimatedStar = (kind, color, pos) => {
-      const star = k.add([
-        k.sprite(getStarSpriteName(kind.filePrefix, color)),
-        k.pos(pos.x, pos.y),
-        k.anchor("center"),
-        k.scale(p.background.stars.starScale),
-        k.opacity(k.rand(0.65, 1)),
-        k.fixed(),
-        k.z(-900),
-        "bg",
-        "bgStarAnimated"
-      ]);
-      tagParallax(star, {
-        parallax: parallaxCfg.stars?.animated ?? 0.08,
-        wrap: { margin: wrapMargin, pad: grid.pad, maxY: starMaxY }
-      });
-      star.use("bgParallaxStar");
-
-      const [delayMin, delayMax] =
-        p.background.stars.animatedStarStartDelayRange;
-      const delay = k.rand(delayMin, delayMax);
-      const variance = kind.speedVariance ?? 0;
-      const speedFactor = 1 + k.rand(-variance, variance);
-
-      // Force frame de-sync even if delay happens to match.
-      star.frame = Math.floor(k.rand(0, kind.frames));
-
-      k.wait(delay, () => {
-        if (!star.exists()) return;
-        star.play(kind.animName, {
-          loop: true,
-          speed: kind.speed * speedFactor
-        });
-      });
-    };
-
-    // Ensure all 4 colors appear even with low counts by round-robin selection.
-    const colors = p.background.stars.colors;
-    for (let i = 0; i < p.background.stars.twinklingStarCount; i++) {
-      const color = colors[i % colors.length];
-      spawnAnimatedStar(p.background.stars.twinkling, color, takeGridPos());
-    }
-    for (let i = 0; i < p.background.stars.pulsingStarCount; i++) {
-      const color = colors[(i + 2) % colors.length];
-      spawnAnimatedStar(p.background.stars.pulsing, color, takeGridPos());
-    }
-
-    const spawnExplodingStar = () => {
-      const color =
-        p.background.stars.colors[
-          Math.floor(k.rand(0, p.background.stars.colors.length))
-        ];
-      const kind = p.background.stars.exploding;
-      const variance = kind.speedVariance ?? 0;
-      const speedFactor = 1 + k.rand(-variance, variance);
-      const speed = kind.speed * speedFactor;
-      const pos = pickGridPos();
-
-      const star = k.add([
-        k.sprite(getStarSpriteName(kind.filePrefix, color)),
-        k.pos(pos.x, pos.y),
-        k.anchor("center"),
-        k.scale(p.background.stars.starScale),
-        k.opacity(k.rand(0.75, 1)),
-        k.fixed(),
-        k.z(-880),
-        "bg",
-        "bgStarExplode"
-      ]);
-      tagParallax(star, {
-        parallax: parallaxCfg.stars?.exploding ?? 0.09,
-        wrap: { margin: wrapMargin, pad: grid.pad, maxY: starMaxY }
-      });
-      star.use("bgParallaxStar");
-
-      // Start from frame 0 so the full explosion is visible.
-      star.frame = 0;
-      star.play(kind.animName, { loop: false, speed });
-
-      // If Kaplay doesn't expose an anim-end event, time it out safely.
-      const durationSec = kind.frames / Math.max(1, speed);
-      k.wait(durationSec + 0.05, () => {
-        if (star.exists()) k.destroy(star);
-      });
-    };
-
-    const scheduleExplodingStar = () => {
-      const [min, max] = p.background.stars.explodingStarIntervalRange;
-      const delay = k.rand(min, max);
-      k.wait(delay, () => {
-        if (gameOver) return;
-        spawnExplodingStar();
-        scheduleExplodingStar();
-      });
-    };
-    k.wait(0.35, () => {
-      if (!gameOver) spawnExplodingStar();
-    });
-    scheduleExplodingStar();
-
-    const spawnShootingStar = () => {
-      const pos = pickGridPos();
-
-      const star = k.add([
-        k.sprite(p.background.stars.shooting.name, {
-          anim: p.background.stars.shooting.animName
-        }),
-        k.pos(pos.x, pos.y),
-        k.anchor("center"),
-        k.scale(p.background.stars.starScale),
-        k.opacity(k.rand(0.8, 1)),
-        k.fixed(),
-        k.z(-870),
-        "bg",
-        "bgShootingStar"
-      ]);
-      tagParallax(star, {
-        parallax: parallaxCfg.stars?.shooting ?? 0.1,
-        wrap: { margin: wrapMargin, pad: grid.pad, maxY: starMaxY }
-      });
-      star.use("bgParallaxStar");
-
-      star.play(p.background.stars.shooting.animName, {
-        loop: false,
-        speed: p.background.stars.shooting.speed
-      });
-
-      const durationSec =
-        p.background.stars.shooting.frames /
-        Math.max(1, p.background.stars.shooting.speed);
-      k.wait(durationSec + 0.05, () => {
-        if (star.exists()) k.destroy(star);
-      });
-    };
-
-    const scheduleShootingStar = () => {
-      const [min, max] = p.background.stars.shootingStarIntervalRange;
-      const delay = k.rand(min, max);
-      k.wait(delay, () => {
-        if (gameOver) return;
-        spawnShootingStar();
-        scheduleShootingStar();
-      });
-    };
-    scheduleShootingStar();
-
-    // Moon (left side)
-    const moonScale = 2 * (k.width() / 375);
-    const moon = k.add([
-      k.sprite(p.background.moon.name),
-      k.pos(55, 125),
-      k.anchor("center"),
-      k.scale(moonScale),
-      k.fixed(),
-      k.z(-860),
-      "bg",
-      "moon"
-    ]);
-    tagParallax(moon, {
-      parallax: parallaxCfg.moon ?? 0.25,
-      parallaxY: parallaxCfg.moonY ?? parallaxCfg.moon ?? 0.25
-    });
-
-    // Earth (fixed at bottom) - optional
-    if (p.background.showEarth) {
-      const earth = k.add([
-        k.sprite(p.background.earth.name),
-        k.pos(k.width() / 2, k.height()),
-        k.anchor("bot"),
-        k.scale(earthScale),
-        k.fixed(),
-        k.z(-850),
-        "bg",
-        "earth"
-      ]);
-      tagParallax(earth, { parallax: parallaxCfg.earth ?? 0.12, parallaxY: 0 });
-    }
-
     // ------------------------------
     // Player + UI
     // ------------------------------
@@ -599,8 +72,8 @@ export function registerSpaceInvadersScene(k, p) {
     const enemySpriteScale = p.enemy.size / p.enemy.spriteSheet.frameWidth;
 
     const playerSpawnPos = k.vec2(
-      k.width() / 2,
-      k.height() - (p.player.spawnOffset + playerHalfHeight)
+      W / 2,
+      H - (p.player.spawnOffset + playerHalfHeight)
     );
 
     const player = k.add([
@@ -613,27 +86,25 @@ export function registerSpaceInvadersScene(k, p) {
     ]);
 
     let currentPlayerState = "idle";
-    let playerTarget = player.pos.clone();
+    // Reused target vector (avoid per-frame / per-state allocations).
+    const playerTarget = player.pos.clone();
 
     // Intro: player starts off-screen and slides in.
-    player.pos.y = k.height() + playerHalfHeight + 80;
-    playerTarget = player.pos.clone();
+    player.pos.y = H + playerHalfHeight + 80;
+    playerTarget.x = player.pos.x;
+    playerTarget.y = player.pos.y;
 
     // Pointer-follow movement bounds (bottom portion of the playfield).
-    const movementCfg = p.player?.movement ?? {};
+    const movementCfg: any = p.player?.movement ?? {};
     const zoneFrac = movementCfg.zoneHeightFrac ?? 0.1; // bottom 10%
     const bottomPadPx = movementCfg.bottomPadPx ?? 6;
 
     const moveMinX = playerHalfWidth;
-    const moveMaxX = k.width() - playerHalfWidth;
+    const moveMaxX = W - playerHalfWidth;
 
     // Keep the ship above the earth sprite area.
-    const moveMaxY =
-      k.height() - earthHeightScaled - playerHalfHeight - bottomPadPx;
-    const moveMinY = Math.max(
-      playerHalfHeight,
-      moveMaxY - k.height() * zoneFrac
-    );
+    const moveMaxY = H - earthHeightScaled - playerHalfHeight - bottomPadPx;
+    const moveMinY = Math.max(playerHalfHeight, moveMaxY - H * zoneFrac);
 
     const setPlayerTargetFromPointer = (pos) => {
       playerTarget.x = k.clamp(pos.x, moveMinX, moveMaxX);
@@ -643,41 +114,46 @@ export function registerSpaceInvadersScene(k, p) {
     // ------------------------------
     // Parallax updater (player offset + star drift + wrap)
     // ------------------------------
+    // Compute parallax deltas once per frame.
+    let parallaxDx = 0;
+    let parallaxDy = 0;
+    const screenCenterX = W / 2;
     k.onUpdate(() => {
-      // Keep background stable once the round is over.
+      if (gameOver) return;
+      parallaxDx = player.pos.x - screenCenterX;
+      parallaxDy = player.pos.y - playerSpawnPos.y;
+    });
+
+    // Apply parallax per object (avoids `k.get("bgParallax")` scans / allocations).
+    k.onUpdate("bgParallax", (o: any) => {
       if (gameOver) return;
 
-      const dx = player.pos.x - k.width() / 2;
-      const dy = player.pos.y - playerSpawnPos.y;
+      // Safety for objects that didn't get initialized.
+      if (!o.basePos) o.basePos = o.pos.clone();
 
-      // Apply player-based parallax only (stars are distant; no auto drift).
-      for (const o of k.get("bgParallax")) {
-        // Safety for objects that didn't get initialized.
-        if (!o.basePos) o.basePos = o.pos.clone();
-        const f = o.parallax ?? 0;
-        const fy = o.parallaxY ?? f;
+      const f = o.parallax ?? 0;
+      const fy = o.parallaxY ?? f;
 
-        // Re-wrap stars only (keeps moon/earth as single sprites).
-        if (o.is("bgParallaxStar") && o.wrap) {
-          const margin = o.wrap.margin ?? wrapMargin;
-          const pad = o.wrap.pad ?? 8;
-          const maxY = o.wrap.maxY ?? k.height();
-          const wrapW = k.width() + 2 * margin;
+      // Re-wrap stars only (keeps moon/earth as single sprites).
+      if (o.is("bgParallaxStar") && o.wrap) {
+        const margin = o.wrap.margin ?? wrapMargin;
+        const pad = o.wrap.pad ?? 8;
+        const maxY = o.wrap.maxY ?? k.height();
+        const wrapW = k.width() + 2 * margin;
 
-          // Wrap based on the *final* parallaxed position so stars don't pop.
-          const projectedX = o.basePos.x - dx * f;
-          if (projectedX < -margin) o.basePos.x += wrapW;
-          if (projectedX > k.width() + margin) o.basePos.x -= wrapW;
+        // Wrap based on the *final* parallaxed position so stars don't pop.
+        const projectedX = o.basePos.x - parallaxDx * f;
+        if (projectedX < -margin) o.basePos.x += wrapW;
+        if (projectedX > k.width() + margin) o.basePos.x -= wrapW;
 
-          const topY = pad;
-          const botY = Math.max(pad, maxY - pad);
-          if (o.basePos.y < topY) o.basePos.y = botY;
-          if (o.basePos.y > botY) o.basePos.y = topY;
-        }
-
-        o.pos.x = o.basePos.x - dx * f;
-        o.pos.y = o.basePos.y - dy * fy;
+        const topY = pad;
+        const botY = Math.max(pad, maxY - pad);
+        if (o.basePos.y < topY) o.basePos.y = botY;
+        if (o.basePos.y > botY) o.basePos.y = topY;
       }
+
+      o.pos.x = o.basePos.x - parallaxDx * f;
+      o.pos.y = o.basePos.y - parallaxDy * fy;
     });
 
     const applySprite = (state) => {
@@ -687,7 +163,7 @@ export function registerSpaceInvadersScene(k, p) {
       currentPlayerState = state;
     };
 
-    const setPlayerState = (state, options = {}) => {
+    const setPlayerState = (state, options: { force?: boolean } = {}) => {
       const { force = false } = options;
       if (!force) {
         if (spriteLocked) return;
@@ -702,6 +178,8 @@ export function registerSpaceInvadersScene(k, p) {
     };
 
     setPlayerState("idle", { force: true });
+
+    //TODO: Create custom class for health bars (maybe ?)
 
     // Player health bar (represents current lives) - drawn under the ship.
     const playerMaxLives = p.player.lives;
@@ -763,10 +241,11 @@ export function registerSpaceInvadersScene(k, p) {
       bossHpLabel.text = `${Math.max(0, boss.hp)} / ${boss.maxHp}`;
     };
 
-    const showCenteredText = (label, color) =>
+    //TODO: Extract this to a helper class or helper functions
+    const showCenteredText = (label: string, color: [number, number, number]) =>
       k.add([
         k.text(label, { size: 48 }),
-        k.pos(k.width() / 2, k.height() / 2),
+        k.pos(W / 2, H / 2),
         k.anchor("center"),
         k.color(...color),
         "ui"
@@ -791,7 +270,9 @@ export function registerSpaceInvadersScene(k, p) {
       bossBaseY = k.height() * cfg.yFrac;
 
       boss = k.add([
-        k.sprite(p.enemy.spriteSheet.name, { anim: p.enemy.spriteSheet.defaultAnim }),
+        k.sprite(p.enemy.spriteSheet.name, {
+          anim: p.enemy.spriteSheet.defaultAnim
+        }),
         // Spawn above the screen and slide in.
         k.pos(k.width() / 2, -120),
         k.anchor("center"),
@@ -849,6 +330,7 @@ export function registerSpaceInvadersScene(k, p) {
       updateBossHpLabel();
     };
 
+    //TDOO: Move this to a debug specific code
     // Dev-only: quick phase switching hotkeys.
     const isDev = typeof import.meta !== "undefined" && import.meta.env?.DEV;
     if (isDev && (p.debug?.phaseSwitch ?? true)) {
@@ -885,7 +367,7 @@ export function registerSpaceInvadersScene(k, p) {
       showCenteredText(message, [255, 0, 0]);
       k.add([
         k.text("Press R to restart", { size: 18 }),
-        k.pos(k.width() / 2, k.height() / 2 + 48),
+        k.pos(W / 2, H / 2 + 48),
         k.anchor("center"),
         k.color(255, 255, 255),
         "ui"
@@ -902,16 +384,11 @@ export function registerSpaceInvadersScene(k, p) {
       showCenteredText("YOU WIN!", [0, 255, 0]);
       k.add([
         k.text("Press R to restart", { size: 18 }),
-        k.pos(k.width() / 2, k.height() / 2 + 48),
+        k.pos(W / 2, H / 2 + 48),
         k.anchor("center"),
         k.color(255, 255, 255),
         "ui"
       ]);
-    };
-
-    const resetPlayerPosition = () => {
-      player.pos = k.vec2(playerSpawnPos.x, playerSpawnPos.y);
-      playerTarget = player.pos.clone();
     };
 
     const handlePlayerHit = (forceGameOver = false) => {
@@ -938,13 +415,14 @@ export function registerSpaceInvadersScene(k, p) {
         const deathDurationSec =
           deathCfg.frames / Math.max(1, deathCfg.animSpeed);
         k.wait(deathDurationSec + 0.05, () => {
-        triggerGameOver();
+          triggerGameOver();
         });
         return;
       }
 
       // Don't reset player position on hit; just freeze movement in place.
-      playerTarget = player.pos.clone();
+      playerTarget.x = player.pos.x;
+      playerTarget.y = player.pos.y;
       k.play(p.sounds.shipDamage.name, { volume: p.sounds.shipDamage.volume });
       setPlayerState("damage", { force: true });
 
@@ -1017,11 +495,14 @@ export function registerSpaceInvadersScene(k, p) {
     // ------------------------------
     // Enemies (spawned when Phase 1 starts)
     // ------------------------------
+    // Track enemy count so we don't need `k.get("enemy").length` in hot paths.
+    let enemyCount = 0;
     const spawnPhase1Enemies = () => {
-    for (let row = 0; row < p.enemy.rows; row++) {
-      for (let col = 0; col < p.enemy.cols; col++) {
+      //TODO: Simplify this loop in a loop using a matrix
+      for (let row = 0; row < p.enemy.rows; row++) {
+        for (let col = 0; col < p.enemy.cols; col++) {
           const targetY = row * p.enemy.spacing + p.enemy.startY;
-        const enemy = k.add([
+          const enemy: any = k.add([
             k.sprite(p.enemy.spriteSheet.name, {
               anim: p.enemy.spriteSheet.defaultAnim
             }),
@@ -1030,27 +511,31 @@ export function registerSpaceInvadersScene(k, p) {
               // Start above the screen; slide down into formation.
               -(60 + row * 26 + k.rand(0, 40))
             ),
-          k.scale(enemySpriteScale),
-          k.area(),
+            k.scale(enemySpriteScale),
+            k.area(),
             "enemy"
-        ]);
+          ]);
+          enemyCount += 1;
+          enemy.onDestroy(() => {
+            enemyCount -= 1;
+          });
           enemy.slideTargetY = targetY;
 
           const [delayMin, delayMax] = p.enemy.spriteSheet
             .animStartDelayRange ?? [0, 0];
-        const delay = k.rand(delayMin, delayMax);
-        const variance = p.enemy.spriteSheet.animSpeedVariance ?? 0;
-        const speedFactor = 1 + k.rand(-variance, variance);
+          const delay = k.rand(delayMin, delayMax);
+          const variance = p.enemy.spriteSheet.animSpeedVariance ?? 0;
+          const speedFactor = 1 + k.rand(-variance, variance);
 
-        k.wait(delay, () => {
-          if (!enemy.exists()) return;
-          enemy.play(p.enemy.spriteSheet.defaultAnim, {
-            loop: true,
+          k.wait(delay, () => {
+            if (!enemy.exists()) return;
+            enemy.play(p.enemy.spriteSheet.defaultAnim, {
+              loop: true,
               speed: p.enemy.spriteSheet.animSpeed * speedFactor
+            });
           });
-        });
+        }
       }
-    }
     };
 
     k.loop(p.enemyFire.interval, () => {
@@ -1121,17 +606,21 @@ export function registerSpaceInvadersScene(k, p) {
         introT += dt;
 
         const playerInY = playerSpawnPos.y;
-        const playerStartY = k.height() + playerHalfHeight + 80;
+        const playerStartY = H + playerHalfHeight + 80;
         const playerSlideSpeed = 320;
-        const bossIntroY = k.height() * 0.22;
+        const bossIntroY = H * 0.22;
         const bossScale = enemySpriteScale * p.boss.scaleMultiplier;
 
         // Step 0: slide player in
         if (introStep === 0) {
           // Move up toward spawn
-          player.pos.y = Math.max(playerInY, player.pos.y - playerSlideSpeed * dt);
+          player.pos.y = Math.max(
+            playerInY,
+            player.pos.y - playerSlideSpeed * dt
+          );
           player.pos.x = playerSpawnPos.x;
-          playerTarget = player.pos.clone();
+          playerTarget.x = player.pos.x;
+          playerTarget.y = player.pos.y;
 
           if (player.pos.y <= playerInY + 0.5) {
             player.pos.y = playerInY;
@@ -1144,8 +633,10 @@ export function registerSpaceInvadersScene(k, p) {
         if (introStep === 1) {
           if (!introBoss) {
             introBoss = k.add([
-              k.sprite(p.enemy.spriteSheet.name, { anim: p.enemy.spriteSheet.defaultAnim }),
-              k.pos(k.width() / 2, -140),
+              k.sprite(p.enemy.spriteSheet.name, {
+                anim: p.enemy.spriteSheet.defaultAnim
+              }),
+              k.pos(W / 2, -140),
               k.anchor("center"),
               k.scale(bossScale),
               "introBoss"
@@ -1154,12 +645,14 @@ export function registerSpaceInvadersScene(k, p) {
           introBoss.pos.y += 220 * dt;
           if (introBoss.pos.y > bossIntroY) introBoss.pos.y = bossIntroY;
 
+          //TODO: remove the shake
           // Stumble: small shake for ~0.6s once boss is in.
           if (introBoss.pos.y === bossIntroY) {
             const shakeT = Math.min(0.6, introT);
             const shake = Math.sin(shakeT * 40) * 3 * (1 - shakeT / 0.6);
             player.pos.x = playerSpawnPos.x + shake;
-            playerTarget = player.pos.clone();
+            playerTarget.x = player.pos.x;
+            playerTarget.y = player.pos.y;
             if (introT >= 0.9) {
               player.pos.x = playerSpawnPos.x;
               introStep = 2;
@@ -1170,7 +663,8 @@ export function registerSpaceInvadersScene(k, p) {
 
         // Step 2: boss calls minions
         if (introStep === 2) {
-          playerTarget = player.pos.clone();
+          playerTarget.x = player.pos.x;
+          playerTarget.y = player.pos.y;
           if (introT >= 1.0) {
             introStep = 3;
             introT = 0;
@@ -1195,9 +689,11 @@ export function registerSpaceInvadersScene(k, p) {
 
         // Keep HP bar attached under the ship.
         playerHpBarBg.pos.x = player.pos.x;
-        playerHpBarBg.pos.y = player.pos.y + playerHalfHeight + playerHpBarOffsetY;
+        playerHpBarBg.pos.y =
+          player.pos.y + playerHalfHeight + playerHpBarOffsetY;
         playerHpBarFill.pos.x = player.pos.x - playerHpBarW / 2;
-        playerHpBarFill.pos.y = player.pos.y + playerHalfHeight + playerHpBarOffsetY;
+        playerHpBarFill.pos.y =
+          player.pos.y + playerHalfHeight + playerHpBarOffsetY;
         updatePlayerHpBar();
         return;
       }
@@ -1223,11 +719,14 @@ export function registerSpaceInvadersScene(k, p) {
       player.pos.y = k.clamp(player.pos.y, moveMinY, moveMaxY);
       updateSpriteFromMovement(moving);
 
+      // TODO: refacttor to limit code duplication from lines 691 to 697
       // Keep HP bar attached under the ship.
       playerHpBarBg.pos.x = player.pos.x;
-      playerHpBarBg.pos.y = player.pos.y + playerHalfHeight + playerHpBarOffsetY;
+      playerHpBarBg.pos.y =
+        player.pos.y + playerHalfHeight + playerHpBarOffsetY;
       playerHpBarFill.pos.x = player.pos.x - playerHpBarW / 2;
-      playerHpBarFill.pos.y = player.pos.y + playerHalfHeight + playerHpBarOffsetY;
+      playerHpBarFill.pos.y =
+        player.pos.y + playerHalfHeight + playerHpBarOffsetY;
       updatePlayerHpBar();
 
       if (phase === "phase1Intro") {
@@ -1252,43 +751,42 @@ export function registerSpaceInvadersScene(k, p) {
           phase = "phase1";
         }
       } else if (phase === "phase1") {
-      const enemies = k.get("enemy");
-      if (enemies.length === 0) return;
+        const enemies = k.get("enemy");
+        if (enemies.length === 0) return;
 
-      if (pendingDrop) {
-        enemies.forEach((enemy) => {
-          enemy.pos.y += p.enemy.dropDistance;
-        });
+        const dropY = pendingDrop ? p.enemy.dropDistance : 0;
         pendingDrop = false;
-      }
-
-      enemies.forEach((enemy) => {
-        enemy.move(p.enemy.speed * enemyDirection, 0);
-      });
-
-      let minX = Infinity;
-      let maxX = -Infinity;
-
-      enemies.forEach((enemy) => {
-        if (enemy.pos.x < minX) minX = enemy.pos.x;
-        const enemyRight = enemy.pos.x + p.enemy.size;
-        if (enemyRight > maxX) maxX = enemyRight;
-
-        const enemyBottom = enemy.pos.y + p.enemy.size;
+        const moveX = p.enemy.speed * enemyDirection;
+        let minX = Infinity;
+        let maxX = -Infinity;
         const playerTop = player.pos.y - playerHalfHeight;
-        if (!gameOver && enemyBottom >= playerTop) {
-          handlePlayerHit(true);
+
+        // Single pass: optional drop, move, bounds, and overrun check.
+        for (let i = 0; i < enemies.length; i++) {
+          const enemy: any = enemies[i];
+          if (dropY) enemy.pos.y += dropY;
+          enemy.move(moveX, 0);
+
+          const x = enemy.pos.x;
+          if (x < minX) minX = x;
+          const enemyRight = x + p.enemy.size;
+          if (enemyRight > maxX) maxX = enemyRight;
+
+          // Immediate loss if invaders reach the ship line.
+          if (enemy.pos.y + p.enemy.size >= playerTop) {
+            handlePlayerHit(true);
+            return;
+          }
         }
-      });
 
         const reachedLeftEdge =
           enemyDirection === -1 && minX <= p.enemy.horizontalPadding;
         const reachedRightEdge =
-          enemyDirection === 1 && maxX >= k.width() - p.enemy.horizontalPadding;
+          enemyDirection === 1 && maxX >= W - p.enemy.horizontalPadding;
 
-      if (reachedLeftEdge || reachedRightEdge) {
-        enemyDirection *= -1;
-        pendingDrop = true;
+        if (reachedLeftEdge || reachedRightEdge) {
+          enemyDirection *= -1;
+          pendingDrop = true;
         }
       } else if (phase === "bossIntro") {
         if (!boss || !boss.exists()) return;
@@ -1308,7 +806,7 @@ export function registerSpaceInvadersScene(k, p) {
         const bossScale = enemySpriteScale * cfg.scaleMultiplier;
         const bossHalfW = (p.enemy.spriteSheet.frameWidth * bossScale) / 2;
         const leftBound = cfg.sweepPadding + bossHalfW;
-        const rightBound = k.width() - cfg.sweepPadding - bossHalfW;
+        const rightBound = W - cfg.sweepPadding - bossHalfW;
 
         // Vertical bob around base Y.
         boss.pos.y = bossBaseY + Math.sin(bossTime * cfg.bobSpeed) * cfg.bobAmp;
@@ -1334,6 +832,7 @@ export function registerSpaceInvadersScene(k, p) {
       k.play(p.sounds.enemyDeath.name, { volume: p.sounds.enemyDeath.volume });
 
       if (deathPos) {
+        //TODO: Better handle sprite sheets to load all sprite states as one.
         const death = k.add([
           k.sprite(p.enemy.deathSpriteSheet.name, {
             anim: p.enemy.deathSpriteSheet.animName
@@ -1356,7 +855,7 @@ export function registerSpaceInvadersScene(k, p) {
         });
       }
 
-      if (k.get("enemy").length === 0) {
+      if (enemyCount <= 0) {
         // End of Phase 1: start boss phase instead of winning.
         startBossPhase();
       }
@@ -1373,10 +872,13 @@ export function registerSpaceInvadersScene(k, p) {
       if (b.hp > 0) return;
 
       // Boss defeated.
+      // TODO: Add a victory song
       phase = "win";
       k.play(p.sounds.enemyDeath.name, { volume: p.sounds.enemyDeath.volume });
 
-      const bossPos = b.pos ? k.vec2(b.pos.x, b.pos.y) : k.vec2(k.width() / 2, bossBaseY);
+      const bossPos = b.pos
+        ? k.vec2(b.pos.x, b.pos.y)
+        : k.vec2(k.width() / 2, bossBaseY);
       k.destroy(b);
       boss = null;
       updateBossHpLabel();
@@ -1388,7 +890,9 @@ export function registerSpaceInvadersScene(k, p) {
       const cfg = p.boss;
       const bossScale = enemySpriteScale * cfg.scaleMultiplier;
       const deathFx = k.add([
-        k.sprite(p.enemy.deathSpriteSheet.name, { anim: p.enemy.deathSpriteSheet.animName }),
+        k.sprite(p.enemy.deathSpriteSheet.name, {
+          anim: p.enemy.deathSpriteSheet.animName
+        }),
         k.pos(bossPos.x, bossPos.y),
         k.anchor("center"),
         k.scale(bossScale),
@@ -1400,7 +904,8 @@ export function registerSpaceInvadersScene(k, p) {
       });
 
       const durationSec =
-        p.enemy.deathSpriteSheet.frames / Math.max(1, p.enemy.deathSpriteSheet.animSpeed);
+        p.enemy.deathSpriteSheet.frames /
+        Math.max(1, p.enemy.deathSpriteSheet.animSpeed);
       k.wait(durationSec + 0.05, () => {
         if (deathFx.exists()) k.destroy(deathFx);
         triggerWin();
