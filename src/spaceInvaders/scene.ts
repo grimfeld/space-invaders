@@ -1,5 +1,12 @@
 import { setupBackground } from "./background";
 import type { KaplayCtx, Params, Phase } from "./types";
+import {
+  addCenteredText,
+  addRestartHint,
+  createHealthBar,
+  type HealthBar
+} from "./ui";
+import { registerDevHotkeys } from "./debug";
 
 export function registerSpaceInvadersScene(k: KaplayCtx, p: Params): void {
   k.scene("space-invaders", () => {
@@ -22,10 +29,7 @@ export function registerSpaceInvadersScene(k: KaplayCtx, p: Params): void {
     let bossDir = 1;
     let bossTime = 0;
     let bossBaseY = 0;
-    /** @type {any} */
-    let bossHpBarBg = null;
-    /** @type {any} */
-    let bossHpBarFill = null;
+    let bossHpBar: HealthBar | null = null;
     /** @type {any} */
     let bossHpLabel = null;
     // Intro cutscene state
@@ -179,47 +183,41 @@ export function registerSpaceInvadersScene(k: KaplayCtx, p: Params): void {
 
     setPlayerState("idle", { force: true });
 
-    //TODO: Create custom class for health bars (maybe ?)
-
     // Player health bar (represents current lives) - drawn under the ship.
     const playerMaxLives = p.player.lives;
     const playerHpBarW = Math.max(28, Math.round(p.player.width * 0.95));
     const playerHpBarH = 6;
     const playerHpBarOffsetY = 10;
 
-    const playerHpBarBg = k.add([
-      k.rect(playerHpBarW, playerHpBarH),
-      k.pos(player.pos.x, player.pos.y + playerHalfHeight + playerHpBarOffsetY),
-      k.anchor("center"),
-      k.color(35, 35, 35),
-      k.z(500),
-      "playerHp"
-    ]);
+    const playerHpBar = createHealthBar(k, {
+      width: playerHpBarW,
+      height: playerHpBarH,
+      centerX: player.pos.x,
+      centerY: player.pos.y + playerHalfHeight + playerHpBarOffsetY,
+      bgColor: [35, 35, 35],
+      fillColor: [90, 255, 140],
+      zBg: 500,
+      zFill: 501,
+      tags: ["playerHp"]
+    });
 
-    const playerHpBarFill = k.add([
-      k.rect(playerHpBarW, playerHpBarH),
-      // Left edge of the bar, so scaling X shrinks/grows correctly
-      k.pos(
-        player.pos.x - playerHpBarW / 2,
+    const syncPlayerHpBar = () => {
+      playerHpBar.setCenterPos(
+        player.pos.x,
         player.pos.y + playerHalfHeight + playerHpBarOffsetY
-      ),
-      k.anchor("left"),
-      k.color(90, 255, 140),
-      k.scale(1, 1),
-      k.z(501),
-      "playerHp"
-    ]);
+      );
+      updatePlayerHpBar();
+    };
 
     const updatePlayerHpBar = () => {
       // Hide if game over / win screens are up.
       const hidden = gameOver || phase === "win" || phase === "gameOver";
-      playerHpBarBg.hidden = hidden;
-      playerHpBarFill.hidden = hidden;
+      playerHpBar.setHidden(hidden);
       if (hidden) return;
 
       const ratio =
         playerMaxLives > 0 ? k.clamp(lives / playerMaxLives, 0, 1) : 0;
-      playerHpBarFill.scale.x = ratio;
+      playerHpBar.setRatio(ratio);
     };
 
     const updateBossHpLabel = () => {
@@ -229,27 +227,16 @@ export function registerSpaceInvadersScene(k: KaplayCtx, p: Params): void {
         boss.exists &&
         boss.exists() &&
         (phase === "boss" || phase === "bossIntro");
-      if (bossHpBarBg) bossHpBarBg.hidden = !show;
-      if (bossHpBarFill) bossHpBarFill.hidden = !show;
+      if (bossHpBar) bossHpBar.setHidden(!show);
       if (bossHpLabel) bossHpLabel.hidden = !show;
       if (!show) return;
 
       const ratio = boss.maxHp > 0 ? k.clamp(boss.hp / boss.maxHp, 0, 1) : 0;
-      if (bossHpBarFill?.scale) bossHpBarFill.scale.x = ratio;
+      if (bossHpBar) bossHpBar.setRatio(ratio);
 
       // Keep a small numeric label for now (useful for tuning).
       bossHpLabel.text = `${Math.max(0, boss.hp)} / ${boss.maxHp}`;
     };
-
-    //TODO: Extract this to a helper class or helper functions
-    const showCenteredText = (label: string, color: [number, number, number]) =>
-      k.add([
-        k.text(label, { size: 48 }),
-        k.pos(W / 2, H / 2),
-        k.anchor("center"),
-        k.color(...color),
-        "ui"
-      ]);
 
     const startBossPhase = () => {
       if (gameOver) return;
@@ -289,30 +276,22 @@ export function registerSpaceInvadersScene(k: KaplayCtx, p: Params): void {
       const barH = 10;
       const barY = 18;
 
-      if (!bossHpBarBg) {
-        bossHpBarBg = k.add([
-          k.rect(barW, barH),
-          k.pos(k.width() / 2, barY),
-          k.anchor("center"),
-          k.fixed(),
-          k.color(40, 40, 40),
-          k.z(1000),
-          "ui"
-        ]);
-      }
-
-      if (!bossHpBarFill) {
-        bossHpBarFill = k.add([
-          k.rect(barW, barH),
-          // Left edge of the bar
-          k.pos(k.width() / 2 - barW / 2, barY),
-          k.anchor("left"),
-          k.fixed(),
-          k.color(255, 80, 80),
-          k.scale(1, 1),
-          k.z(1001),
-          "ui"
-        ]);
+      if (!bossHpBar) {
+        bossHpBar = createHealthBar(k, {
+          width: barW,
+          height: barH,
+          centerX: k.width() / 2,
+          centerY: barY,
+          bgColor: [40, 40, 40],
+          fillColor: [255, 80, 80],
+          zBg: 1000,
+          zFill: 1001,
+          fixed: true,
+          tags: ["ui"]
+        });
+      } else {
+        // Ensure it is positioned correctly if screen size changed.
+        bossHpBar.setCenterPos(k.width() / 2, barY);
       }
 
       if (!bossHpLabel) {
@@ -330,22 +309,12 @@ export function registerSpaceInvadersScene(k: KaplayCtx, p: Params): void {
       updateBossHpLabel();
     };
 
-    //TDOO: Move this to a debug specific code
-    // Dev-only: quick phase switching hotkeys.
-    const isDev = typeof import.meta !== "undefined" && import.meta.env?.DEV;
-    if (isDev && (p.debug?.phaseSwitch ?? true)) {
-      // 1: restart into Phase 1 (intro will play)
-      k.onKeyPress("1", () => {
-        stopMusic();
-        k.go("space-invaders");
-      });
-      // 2: force start boss phase immediately
-      k.onKeyPress("2", () => {
-        if (gameOver) return;
-        if (phase === "boss" || phase === "bossIntro") return;
-        startBossPhase();
-      });
-    }
+    registerDevHotkeys(k, p, {
+      stopMusic,
+      startBossPhase,
+      getPhase: () => phase,
+      isGameOver: () => gameOver
+    });
 
     const startPhase1 = () => {
       if (gameOver) return;
@@ -364,14 +333,13 @@ export function registerSpaceInvadersScene(k: KaplayCtx, p: Params): void {
       stopMusic();
       if (gameOverUiShown) return;
       gameOverUiShown = true;
-      showCenteredText(message, [255, 0, 0]);
-      k.add([
-        k.text("Press R to restart", { size: 18 }),
-        k.pos(W / 2, H / 2 + 48),
-        k.anchor("center"),
-        k.color(255, 255, 255),
-        "ui"
-      ]);
+      addCenteredText(k, {
+        label: message,
+        color: [255, 0, 0],
+        x: W / 2,
+        y: H / 2
+      });
+      addRestartHint(k, { x: W / 2, y: H / 2 + 48 });
     };
 
     const triggerWin = () => {
@@ -380,15 +348,20 @@ export function registerSpaceInvadersScene(k: KaplayCtx, p: Params): void {
       phase = "win";
       spriteLocked = true;
       stopMusic();
+      if (p.victoryMusic?.enabled && p.victoryMusic.name) {
+        musicHandle = k.play(p.victoryMusic.name, {
+          loop: true,
+          volume: p.victoryMusic.volume ?? 0.45
+        });
+      }
       setPlayerState("idle", { force: true });
-      showCenteredText("YOU WIN!", [0, 255, 0]);
-      k.add([
-        k.text("Press R to restart", { size: 18 }),
-        k.pos(W / 2, H / 2 + 48),
-        k.anchor("center"),
-        k.color(255, 255, 255),
-        "ui"
-      ]);
+      addCenteredText(k, {
+        label: "YOU WIN!",
+        color: [0, 255, 0],
+        x: W / 2,
+        y: H / 2
+      });
+      addRestartHint(k, { x: W / 2, y: H / 2 + 48 });
     };
 
     const handlePlayerHit = (forceGameOver = false) => {
@@ -498,44 +471,50 @@ export function registerSpaceInvadersScene(k: KaplayCtx, p: Params): void {
     // Track enemy count so we don't need `k.get("enemy").length` in hot paths.
     let enemyCount = 0;
     const spawnPhase1Enemies = () => {
-      //TODO: Simplify this loop in a loop using a matrix
-      for (let row = 0; row < p.enemy.rows; row++) {
-        for (let col = 0; col < p.enemy.cols; col++) {
-          const targetY = row * p.enemy.spacing + p.enemy.startY;
-          const enemy: any = k.add([
-            k.sprite(p.enemy.spriteSheet.name, {
-              anim: p.enemy.spriteSheet.defaultAnim
-            }),
-            k.pos(
-              col * p.enemy.spacing + 30,
-              // Start above the screen; slide down into formation.
-              -(60 + row * 26 + k.rand(0, 40))
-            ),
-            k.scale(enemySpriteScale),
-            k.area(),
-            "enemy"
-          ]);
-          enemyCount += 1;
-          enemy.onDestroy(() => {
-            enemyCount -= 1;
-          });
-          enemy.slideTargetY = targetY;
+      const rows = p.enemy.rows;
+      const cols = p.enemy.cols;
+      const cellCount = rows * cols;
 
-          const [delayMin, delayMax] = p.enemy.spriteSheet
-            .animStartDelayRange ?? [0, 0];
-          const delay = k.rand(delayMin, delayMax);
-          const variance = p.enemy.spriteSheet.animSpeedVariance ?? 0;
-          const speedFactor = 1 + k.rand(-variance, variance);
+      const cells = Array.from({ length: cellCount }, (_, i) => ({
+        row: Math.floor(i / cols),
+        col: i % cols
+      }));
 
-          k.wait(delay, () => {
-            if (!enemy.exists()) return;
-            enemy.play(p.enemy.spriteSheet.defaultAnim, {
-              loop: true,
-              speed: p.enemy.spriteSheet.animSpeed * speedFactor
-            });
+      cells.forEach(({ row, col }) => {
+        const targetY = row * p.enemy.spacing + p.enemy.startY;
+        const enemy: any = k.add([
+          k.sprite(p.enemy.spriteSheet.name, {
+            anim: p.enemy.spriteSheet.defaultAnim
+          }),
+          k.pos(
+            col * p.enemy.spacing + 30,
+            // Start above the screen; slide down into formation.
+            -(60 + row * 26 + k.rand(0, 40))
+          ),
+          k.scale(enemySpriteScale),
+          k.area(),
+          "enemy"
+        ]);
+        enemyCount += 1;
+        enemy.onDestroy(() => {
+          enemyCount -= 1;
+        });
+        enemy.slideTargetY = targetY;
+
+        const [delayMin, delayMax] = p.enemy.spriteSheet
+          .animStartDelayRange ?? [0, 0];
+        const delay = k.rand(delayMin, delayMax);
+        const variance = p.enemy.spriteSheet.animSpeedVariance ?? 0;
+        const speedFactor = 1 + k.rand(-variance, variance);
+
+        k.wait(delay, () => {
+          if (!enemy.exists()) return;
+          enemy.play(p.enemy.spriteSheet.defaultAnim, {
+            loop: true,
+            speed: p.enemy.spriteSheet.animSpeed * speedFactor
           });
-        }
-      }
+        });
+      });
     };
 
     k.loop(p.enemyFire.interval, () => {
@@ -645,12 +624,9 @@ export function registerSpaceInvadersScene(k: KaplayCtx, p: Params): void {
           introBoss.pos.y += 220 * dt;
           if (introBoss.pos.y > bossIntroY) introBoss.pos.y = bossIntroY;
 
-          //TODO: remove the shake
-          // Stumble: small shake for ~0.6s once boss is in.
+          // Once the boss is in, pause briefly, then continue.
           if (introBoss.pos.y === bossIntroY) {
-            const shakeT = Math.min(0.6, introT);
-            const shake = Math.sin(shakeT * 40) * 3 * (1 - shakeT / 0.6);
-            player.pos.x = playerSpawnPos.x + shake;
+            player.pos.x = playerSpawnPos.x;
             playerTarget.x = player.pos.x;
             playerTarget.y = player.pos.y;
             if (introT >= 0.9) {
@@ -688,13 +664,7 @@ export function registerSpaceInvadersScene(k: KaplayCtx, p: Params): void {
         }
 
         // Keep HP bar attached under the ship.
-        playerHpBarBg.pos.x = player.pos.x;
-        playerHpBarBg.pos.y =
-          player.pos.y + playerHalfHeight + playerHpBarOffsetY;
-        playerHpBarFill.pos.x = player.pos.x - playerHpBarW / 2;
-        playerHpBarFill.pos.y =
-          player.pos.y + playerHalfHeight + playerHpBarOffsetY;
-        updatePlayerHpBar();
+        syncPlayerHpBar();
         return;
       }
       const speed = p.player.speed;
@@ -719,15 +689,8 @@ export function registerSpaceInvadersScene(k: KaplayCtx, p: Params): void {
       player.pos.y = k.clamp(player.pos.y, moveMinY, moveMaxY);
       updateSpriteFromMovement(moving);
 
-      // TODO: refacttor to limit code duplication from lines 691 to 697
       // Keep HP bar attached under the ship.
-      playerHpBarBg.pos.x = player.pos.x;
-      playerHpBarBg.pos.y =
-        player.pos.y + playerHalfHeight + playerHpBarOffsetY;
-      playerHpBarFill.pos.x = player.pos.x - playerHpBarW / 2;
-      playerHpBarFill.pos.y =
-        player.pos.y + playerHalfHeight + playerHpBarOffsetY;
-      updatePlayerHpBar();
+      syncPlayerHpBar();
 
       if (phase === "phase1Intro") {
         const enemies = k.get("enemy");
@@ -832,7 +795,6 @@ export function registerSpaceInvadersScene(k: KaplayCtx, p: Params): void {
       k.play(p.sounds.enemyDeath.name, { volume: p.sounds.enemyDeath.volume });
 
       if (deathPos) {
-        //TODO: Better handle sprite sheets to load all sprite states as one.
         const death = k.add([
           k.sprite(p.enemy.deathSpriteSheet.name, {
             anim: p.enemy.deathSpriteSheet.animName
@@ -872,7 +834,6 @@ export function registerSpaceInvadersScene(k: KaplayCtx, p: Params): void {
       if (b.hp > 0) return;
 
       // Boss defeated.
-      // TODO: Add a victory song
       phase = "win";
       k.play(p.sounds.enemyDeath.name, { volume: p.sounds.enemyDeath.volume });
 

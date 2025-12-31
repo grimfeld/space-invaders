@@ -344,17 +344,18 @@ export function setupBackground(
   };
   scheduleShootingStar();
 
-  //TODO: Make the assets programmable from the params. For example, the moon and earth.
-
   // Moon (left side)
-  const moonScale = 2 * (k.width() / 375);
+  const moonCfg: any = p.background.moon ?? {};
+  const moonScaleMultiplier = moonCfg.scaleMultiplier ?? 2;
+  const moonScaleRefWidth = moonCfg.scaleRefWidth ?? 375;
+  const moonScale = moonScaleMultiplier * (k.width() / moonScaleRefWidth);
   const moon = k.add([
     k.sprite(p.background.moon.name),
-    k.pos(55, 125),
-    k.anchor("center"),
+    k.pos(moonCfg.x ?? 55, moonCfg.y ?? 125),
+    k.anchor(moonCfg.anchor ?? "center"),
     k.scale(moonScale),
     k.fixed(),
-    k.z(-860),
+    k.z(moonCfg.z ?? -860),
     "bg",
     "moon"
   ]);
@@ -365,13 +366,17 @@ export function setupBackground(
 
   // Earth (fixed at bottom) - optional
   if (p.background.showEarth) {
+    const earthCfg: any = p.background.earth ?? {};
     const earth = k.add([
       k.sprite(p.background.earth.name),
-      k.pos(k.width() / 2, k.height()),
-      k.anchor("bot"),
+      k.pos(
+        k.width() * (earthCfg.xFrac ?? 0.5),
+        k.height() * (earthCfg.yFrac ?? 1)
+      ),
+      k.anchor(earthCfg.anchor ?? "bot"),
       k.scale(earthScale),
       k.fixed(),
-      k.z(-850),
+      k.z(earthCfg.z ?? -850),
       "bg",
       "earth"
     ]);

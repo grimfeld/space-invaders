@@ -5,6 +5,30 @@ export async function loadSpaceInvadersAssets(
   k: KaplayCtx,
   p: Params
 ): Promise<void> {
+  const loadSpriteSheet = (opts: {
+    name: string;
+    url: string;
+    sliceX: number;
+    sliceY: number;
+    frames: number;
+    animName: string;
+    animSpeed: number;
+    loop: boolean;
+  }) => {
+    return k.loadSprite(opts.name, opts.url, {
+      sliceX: opts.sliceX,
+      sliceY: opts.sliceY,
+      anims: {
+        [opts.animName]: {
+          from: 0,
+          to: opts.frames - 1,
+          speed: opts.animSpeed,
+          loop: opts.loop
+        }
+      }
+    });
+  };
+
   const showLoadError = (msg: string) => {
     k.add([
       k.text(msg, { size: 24 }),
@@ -12,12 +36,13 @@ export async function loadSpaceInvadersAssets(
       k.anchor("center"),
       k.color(255, 0, 0),
       k.fixed(),
-      "ui",
+      "ui"
     ]);
   };
 
   try {
     const starColorFiles = getStarColorFiles(p);
+    const playerSheets = p.player.spriteSheets as Record<string, any>;
 
     await Promise.all([
       k.loadSprite(p.background.staticBg.name, p.background.staticBg.url),
@@ -26,6 +51,9 @@ export async function loadSpaceInvadersAssets(
         : []),
       k.loadSprite(p.background.moon.name, p.background.moon.url),
       k.loadSound(p.music.name, p.music.url),
+      ...(p.victoryMusic?.enabled && p.victoryMusic.url
+        ? [k.loadSound(p.victoryMusic.name, p.victoryMusic.url)]
+        : []),
       k.loadSound(p.sounds.shipFire.name, p.sounds.shipFire.url),
       k.loadSound(p.sounds.shipDamage.name, p.sounds.shipDamage.url),
       k.loadSound(p.sounds.shipDeath.name, p.sounds.shipDeath.url),
@@ -56,9 +84,9 @@ export async function loadSpaceInvadersAssets(
               from: 0,
               to: kind.frames - 1,
               speed: kind.speed,
-              loop: true,
-            },
-          },
+              loop: true
+            }
+          }
         });
       }),
 
@@ -73,71 +101,24 @@ export async function loadSpaceInvadersAssets(
               from: 0,
               to: p.background.stars.shooting.frames - 1,
               speed: p.background.stars.shooting.speed,
-              loop: true,
-            },
-          },
+              loop: true
+            }
+          }
         }
       ),
 
-      k.loadSprite(p.player.spriteSheets.idle.name, p.player.spriteSheets.idle.url, {
-        sliceX: p.player.spriteSheets.idle.sliceX,
-        sliceY: p.player.spriteSheets.idle.sliceY,
-        anims: {
-          idle: {
-            from: 0,
-            to: p.player.spriteSheets.idle.frames - 1,
-            speed: p.player.spriteSheets.idle.animSpeed,
-            loop: true,
-          },
-        },
-      }),
-
-      k.loadSprite(
-        p.player.spriteSheets.moving.name,
-        p.player.spriteSheets.moving.url,
-        {
-          sliceX: p.player.spriteSheets.moving.sliceX,
-          sliceY: p.player.spriteSheets.moving.sliceY,
-          anims: {
-            moving: {
-              from: 0,
-              to: p.player.spriteSheets.moving.frames - 1,
-              speed: p.player.spriteSheets.moving.animSpeed,
-              loop: true,
-            },
-          },
-        }
+      ...Object.entries(playerSheets).map(([state, cfg]) =>
+        loadSpriteSheet({
+          name: cfg.name,
+          url: cfg.url,
+          sliceX: cfg.sliceX,
+          sliceY: cfg.sliceY,
+          frames: cfg.frames,
+          animName: state,
+          animSpeed: cfg.animSpeed,
+          loop: state === "idle" || state === "moving"
+        })
       ),
-
-      k.loadSprite(
-        p.player.spriteSheets.damage.name,
-        p.player.spriteSheets.damage.url,
-        {
-          sliceX: p.player.spriteSheets.damage.sliceX,
-          sliceY: p.player.spriteSheets.damage.sliceY,
-          anims: {
-            damage: {
-              from: 0,
-              to: p.player.spriteSheets.damage.frames - 1,
-              speed: p.player.spriteSheets.damage.animSpeed,
-              loop: false,
-            },
-          },
-        }
-      ),
-
-      k.loadSprite(p.player.spriteSheets.death.name, p.player.spriteSheets.death.url, {
-        sliceX: p.player.spriteSheets.death.sliceX,
-        sliceY: p.player.spriteSheets.death.sliceY,
-        anims: {
-          death: {
-            from: 0,
-            to: p.player.spriteSheets.death.frames - 1,
-            speed: p.player.spriteSheets.death.animSpeed,
-            loop: false,
-          },
-        },
-      }),
 
       k.loadSprite(p.player.bulletSprite.name, p.player.bulletSprite.url),
 
@@ -149,9 +130,9 @@ export async function loadSpaceInvadersAssets(
             from: 0,
             to: p.enemy.spriteSheet.frames - 1,
             speed: p.enemy.spriteSheet.animSpeed,
-            loop: true,
-          },
-        },
+            loop: true
+          }
+        }
       }),
 
       k.loadSprite(
@@ -165,11 +146,11 @@ export async function loadSpaceInvadersAssets(
               from: 0,
               to: p.enemy.deathSpriteSheet.frames - 1,
               speed: p.enemy.deathSpriteSheet.animSpeed,
-              loop: false,
-            },
-          },
+              loop: false
+            }
+          }
         }
-      ),
+      )
     ]);
   } catch (err) {
     console.error("Failed to load assets", err);
@@ -177,5 +158,3 @@ export async function loadSpaceInvadersAssets(
     throw err;
   }
 }
-
-
